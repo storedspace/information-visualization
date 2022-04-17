@@ -1,0 +1,148 @@
+
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.js"></script>
+
+<!-- Create a div where the graph will take place -->
+<div id="my_dataviz"></div>
+
+<!-- Color Scale -->
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+
+
+<script>
+
+// set the dimensions and margins of the graph
+var margin = {top: 30, right: 0, bottom: 30, left: 30},
+    width = 460 - margin.left - margin.right,
+    height = 400  - margin.bottom;
+
+// append the svg object to the body of the page
+var svg = d3.select("#my_dataviz")
+  .append("svg")
+    .attr("width", width + margin.left+500)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+
+//Read the data
+d3.csv("https://raw.githubusercontent.com/storedspace/information-visualization/main/%E6%B6%88%E8%B2%BB%E8%80%85%E7%89%A9%E5%83%B9%E6%8C%87%E6%A8%99.csv", function(data) {
+
+    // List of groups (here I have one group per column)
+    var allGroup = ["Total","Food","Clothing","Housing","Transport","Health","Education","Others"]
+
+    // Reformat the data: we need an array of arrays of {x, y} tuples
+    var dataReady = allGroup.map( function(grpName) { // .map allows to do something for each element of the list
+      return {
+        name: grpName,
+        values: data.map(function(d) {
+          return {Time: d.Time, a: +d[grpName]};
+        })
+      };
+    });
+
+    // A color scale: one color for each group
+    var myColor = d3.scaleOrdinal()
+      .domain(allGroup)
+      .range(d3.schemeSet2);
+
+    // Add X axis --> it is a date format
+    var x = d3.scaleLinear()
+      .domain([99,110])
+      .range([ 0, width ]);
+    svg.append("g")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x));
+
+    // Add Y axis
+    var y = d3.scaleLinear()
+      .domain( [80,110])
+      .range([ height, 0 ]);
+    svg.append("g")
+      .call(d3.axisLeft(y));
+
+    // Add the lines
+    var line = d3.line()
+      .x(function(d) { return x(+d.Time) })
+      .y(function(d) { return y(+d.a) })
+    svg.selectAll("myLines")
+      .data(dataReady)
+      .enter()
+      .append("path")
+        .attr("class", function(d){ return d.name })
+        .attr("d", function(d){ return line(d.values) } )
+        .attr("stroke", function(d){ return myColor(d.name) })
+        .style("stroke-width", 4)
+        .style("fill", "none")
+
+    // Add the points
+    svg
+      // First we need to enter in a group
+      .selectAll("myDots")
+      .data(dataReady)
+      .enter()
+        .append('g')
+        .style("fill", function(d){ return myColor(d.name) })
+        .attr("class", function(d){ return d.name })
+      // Second we need to enter in the 'values' part of this group
+      .selectAll("myPoints")
+      .data(function(d){ return d.values })
+      .enter()
+      .append("circle")
+        .attr("cx", function(d) { return x(d.Time) } )
+        .attr("cy", function(d) { return y(d.a) } )
+        .attr("r", 5)
+        .attr("stroke", "white")
+
+    // Add a legend (interactive)
+    svg
+      .selectAll("myLegend")
+      .data(dataReady)
+      .enter()
+        .append('g')
+        .append("text")
+          .attr('x', function(d,i){ return 10 + i*75})
+          .attr('y', 10)
+          .text(function(d) { return d.name; })
+          .style("fill", function(d){ return myColor(d.name) })
+          .style("font-size", 15)
+        .on("click", function(d){
+          // is the element currently visible ?
+          currentOpacity = d3.selectAll("." + d.name).style("opacity")
+          // Change the opacity: from 0 to 1 or from 1 to 0
+          d3.selectAll("." + d.name).transition().style("opacity", currentOpacity == 1 ? 0:1)
+
+        })
+        
+    // x-axis unit
+    svg.append("text")
+            .attr("x", width + 70)
+            .attr("y", height + 15)
+            .attr("text-anchor", "end")
+            .style("font-size", "12px")
+            .text("單位：年");
+
+    // y axis unit
+    svg.append("text")
+            .attr("x", 0)
+            .attr("y", -10)
+            .attr("text-anchor", "middle")
+            .style("font-size", "12px")
+            .text("單位：%");
+})
+
+
+</script>
+
+<body>
+  <h2 id="title">民國100年到民國110年台灣消費者的物價指數</h1>
+  <p>資料來源：中華民國統計資訊網
+      <a href="https://www.stat.gov.tw/mp.asp?mp=4">https://www.stat.gov.tw/mp.asp?mp=4</a>
+  </p>
+  <p><pre> 設計圖說明:
+    點選圖上的lable，可以暫時將折線圖隱藏，欲看此條折線圖再次點選lable即可
+  </pre></p>
+</body>
