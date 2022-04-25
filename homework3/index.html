@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v6.js"></script>
+
+
+<body>
+  <div style="text-align:center;">
+      <button onclick="CheckYear(1999);" style="text-align:center;">1999</button>
+      <button onclick="CheckYear(2000);" style="text-align:center;">2000</button>
+      <button onclick="CheckYear(2001);" style="text-align:center;">2001</button>
+      <button onclick="CheckYear(2002);" style="text-align:center;">2002</button>
+      <button onclick="CheckYear(2003);" style="text-align:center;">2003</button>
+      <button onclick="CheckYear(2004);" style="text-align:center;">2004</button>
+      <button onclick="CheckYear(2005);" style="text-align:center;">2005</button>
+      <button onclick="CheckYear(2006);" style="text-align:center;">2006</button>
+      <button onclick="CheckYear(2007);" style="text-align:center;">2007</button>
+      <button onclick="CheckYear(2008);" style="text-align:center;">2008</button>
+      <button onclick="CheckYear(2009);" style="text-align:center;">2009</button>
+      <button onclick="CheckYear(2010);" style="text-align:center;">2010</button>
+      <button onclick="CheckYear(2011);" style="text-align:center;">2011</button>
+      <button onclick="CheckYear(2012);" style="text-align:center;">2012</button>
+      <button onclick="CheckYear(2013);" style="text-align:center;">2013</button>
+      <button onclick="CheckYear(2014);" style="text-align:center;">2014</button>
+      <button onclick="CheckYear(2015);" style="text-align:center;">2015</button>
+      <button onclick="CheckYear(2016);" style="text-align:center;">2016</button>
+  </div>
+
+  <!-- Create an element where the map will take place -->
+  <svg id="my_dataviz" width="600" height="700"></svg>
+
+  <script>
+
+  // The svg
+  const svg = d3.select("svg"),
+      width = +svg.attr("width"),
+      height = +svg.attr("height");
+
+  // Map and projection
+  const projection = d3.geoMercator()
+      .scale(85)
+      .translate([width/2, height/2*1.3])
+
+  // A path generator
+  const path = d3.geoPath()
+      .projection(projection)
+
+  // Load world shape AND list of connection
+  function CheckYear(EnterYear){
+    Promise.all([
+      d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson"),  // World shape
+      d3.csv("https://raw.githubusercontent.com/storedspace/information-visualization/main/homework3/Afghanistan_origin.csv") // Position of circles
+    ]).then( 
+
+    function (initialize) {
+
+        var NowYear = EnterYear;
+        let dataGeo = initialize[0]//map
+        let data = initialize[1]//line
+
+        //const year = [1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016];
+
+        // Reformat the list of link. Note that columns in csv file are called long1, long2, lat1, lat2
+        const link = []
+        data.forEach(function(row){
+          if(row.Year == NowYear){
+          	source = [67.709953, 33.93911]
+          	target = [+row.Longitude, +row.Latitude]
+          	topush = {type: "LineString", coordinates: [source, target]}
+          	link.push(topush)
+          }
+        })
+
+        // Draw the map
+        svg.append("g")
+            .selectAll("path")
+            .data(dataGeo.features)
+            .join("path")
+                .attr("fill", "#b8b8b8")
+                .attr("d", path)
+                .style("stroke", "#fff")
+                .style("stroke-width", 0)
+
+        // Add the path
+        svg.selectAll("myPath")
+          .data(link)
+          .join("path")
+            .attr("d", function(d){ return path(d)})
+            .style("fill", "none")
+            .style("stroke", "#69b3a2")
+            .style("stroke-width", 2)
+
+    })
+  }
+  </script>
+</body>
